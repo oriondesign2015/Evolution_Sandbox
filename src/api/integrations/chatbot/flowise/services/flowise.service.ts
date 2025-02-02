@@ -36,7 +36,7 @@ export class FlowiseService {
       return { session };
     } catch (error) {
       this.logger.error(error);
-      return;
+      return null;
     }
   }
 

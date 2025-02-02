@@ -857,4 +857,76 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
       return;
     }
   }
+
+  public async startFlowise(instance: InstanceDto, data: any) {
+    const instanceId = await this.prismaRepository.instance.findFirst({
+        where: {
+            name: instance.instanceName,
+        },
+    }).then((instance) => instance.id);
+
+    if (data.remoteJid === 'status@broadcast') return;
+
+    const remoteJid = data.remoteJid;
+    const url = data.url;
+    const typebot = data.typebot;
+    const startSession = data.startSession;
+    const variables = data.variables;
+
+    // Lógica para verificar e definir as configurações padrão
+    const defaultSettingCheck = await this.settingsRepository.findFirst({
+        where: {
+            instanceId: instanceId,
+        },
+    });
+
+    // Verificação de JIDs a serem ignorados
+    if (this.checkIgnoreJids(defaultSettingCheck?.ignoreJids, remoteJid)) throw new Error('Jid not allowed');
+
+    const prefilledVariables: any = {};
+    if (variables?.length) {
+        variables.forEach((variable: { name: string | number; value: string }) => {
+            prefilledVariables[variable.name] = variable.value;
+        });
+    }
+
+    if (startSession) {
+        // Lógica para iniciar a sessão do Flowise
+        let findBot: any = await this.botRepository.findFirst({
+            where: {
+                url: url,
+                typebot: typebot,
+                instanceId: instanceId,
+            },
+        });
+
+        if (!findBot) {
+            findBot = await this.botRepository.create({
+                data: {
+                    enabled: true,
+                    url: url,
+                    typebot: typebot,
+                    instanceId: instanceId,
+                },
+            });
+        }
+
+        await this.flowiseService.processBot(
+            instance,
+            remoteJid,
+            findBot,
+            url,
+            prefilledVariables,
+        );
+    }
+
+    return {
+        flowise: {
+            url: url,
+            remoteJid: remoteJid,
+            typebot: typebot,
+            prefilledVariables: prefilledVariables,
+        },
+    };
+  }
 }

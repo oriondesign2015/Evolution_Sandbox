@@ -9,6 +9,8 @@ import { getConversationMessage } from '@utils/getConversationMessage';
 import { ChatbotController, ChatbotControllerInterface, EmitData } from '../../chatbot.controller';
 import { FlowiseDto } from '../dto/flowise.dto';
 import { FlowiseService } from '../services/flowise.service';
+import { IntegrationSession } from '@api/models/integrationSession';
+import { FlowiseSetting } from '@api/models/flowiseSetting';
 
 export class FlowiseController extends ChatbotController implements ChatbotControllerInterface {
   constructor(
@@ -885,7 +887,7 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
     let session: IntegrationSession | null = null; // Inicialize como null ou um valor padrão
     let settings: FlowiseSetting; // Declare a variável
     let content: string; // Declare a variável
-    const pushName = data.pushName; // Certifique-se de que 'data' contém 'pushName'
+    const pushName = data.pushName || ''; // Certifique-se de que 'data' contém 'pushName'
 
     // Lógica para verificar e definir as configurações padrão
     const defaultSettingCheck = await this.settingsRepository.findFirst({

@@ -3547,17 +3547,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
   public async deleteMessage(del: DeleteMessage) {
     try {
-      const key = {
-        remoteJid: del.remoteJid,
-        fromMe: del.fromMe,
-        id: del.id, // Mudança aqui: usando 'id' em vez de 'messageId'
-        participant: del.participant // necessário para grupos
-      };
-
-      const response = await this.client.sendMessage(del.remoteJid, {
-        delete: key
-      });
-
+      const response = await this.client.sendMessage(del.remoteJid, { delete: del });
       if (response) {
         const messageId = response.message?.protocolMessage?.key?.id;
         if (messageId) {
@@ -3570,8 +3560,8 @@ export class BaileysStartupService extends ChannelStartupService {
               },
             },
           });
-          
-          if (isLogicalDeleted && message) {
+          if (isLogicalDeleted) {
+            if (!message) return response;
             const existingKey = typeof message?.key === 'object' && message.key !== null ? message.key : {};
             message = await this.prismaRepository.message.update({
               where: { id: message.id },
@@ -3583,13 +3573,30 @@ export class BaileysStartupService extends ChannelStartupService {
                 status: 'DELETED',
               },
             });
+          } else {
+            await this.prismaRepository.message.deleteMany({
+              where: {
+                id: message.id,
+              },
+            });
           }
+          this.sendDataWebhook(Events.MESSAGES_DELETE, {
+            id: message.id,
+            instanceId: message.instanceId,
+            key: message.key,
+            messageType: message.messageType,
+            status: 'DELETED',
+            source: message.source,
+            messageTimestamp: message.messageTimestamp,
+            pushName: message.pushName,
+            participant: message.participant,
+            message: message.message,
+          });
         }
       }
-
-      return { status: 'success', message: 'Mensagem deletada com sucesso' };
+      return response;
     } catch (error) {
-      throw new InternalServerErrorException('Erro ao deletar mensagem', error?.toString());
+      throw new InternalServerErrorException('Error while deleting message for everyone', error?.toString());
     }
   }
 

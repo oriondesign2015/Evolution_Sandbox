@@ -833,6 +833,7 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
           );
         });
       } else {
+        const pushName = msg?.pushName || '';
         await this.flowiseService.processBot(
           this.waMonitor.waInstances[instance.instanceName],
           remoteJid,

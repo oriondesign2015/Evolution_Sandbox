@@ -821,10 +821,10 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
               ignoreJids,
               splitMessages,
               timePerChar,
-              session, // Adicione a sessão aqui
-              settings, // Adicione as configurações aqui
-              content, // Adicione o conteúdo que você deseja passar
-              pushName, // Se necessário, adicione o pushName
+              session,
+              settings,
+              content,
+              pushName
             },
             debouncedContent,
             msg?.pushName,
@@ -849,10 +849,10 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
             ignoreJids,
             splitMessages,
             timePerChar,
-            session, // Adicione a sessão aqui
-            settings, // Adicione as configurações aqui
-            content, // Adicione o conteúdo que você deseja passar
-            pushName, // Se necessário, adicione o pushName
+            session,
+            settings,
+            content,
+            pushName
           },
           content,
           msg?.pushName,
@@ -923,8 +923,10 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
             instance,
             remoteJid,
             findBot,
-            url,
-            prefilledVariables,
+            session,
+            settings,
+            content,
+            pushName
         );
     }
 

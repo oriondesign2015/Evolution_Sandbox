@@ -3547,7 +3547,6 @@ export class BaileysStartupService extends ChannelStartupService {
 
   public async deleteMessage(del: DeleteMessage) {
     try {
-      // Primeiro verifica se a mensagem existe e pertence à instância
       const message = await this.prismaRepository.message.findFirst({
         where: {
           instanceId: this.instanceId,
@@ -3562,8 +3561,17 @@ export class BaileysStartupService extends ChannelStartupService {
         throw new NotFoundException('Message not found or not authorized to delete');
       }
 
-      // Envia comando de deleção
-      const response = await this.client.sendMessage(del.remoteJid, { delete: del });
+      // Modificação principal aqui - usando a key completa da mensagem
+      const deleteKey = {
+        remoteJid: del.remoteJid,
+        fromMe: message.key.fromMe,
+        id: del.id,
+        participant: message.key.participant // importante para grupos
+      };
+
+      const response = await this.client.sendMessage(del.remoteJid, { 
+        delete: deleteKey
+      });
       
       if (response) {
         const isLogicalDeleted = configService.get<Database>('DATABASE').DELETE_DATA.LOGICAL_MESSAGE_DELETE;

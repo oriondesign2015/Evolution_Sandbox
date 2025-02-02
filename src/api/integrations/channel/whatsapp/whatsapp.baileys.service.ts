@@ -3561,29 +3561,27 @@ export class BaileysStartupService extends ChannelStartupService {
         throw new NotFoundException('Message not found or not authorized to delete');
       }
 
-      const messageKey = message.key as any;
-      
-      // Estrutura completa para deletar mensagens
+      // Estrutura correta para deletar mensagens
       const deleteKey = {
         remoteJid: del.remoteJid,
-        fromMe: messageKey.fromMe,
+        fromMe: del.fromMe,
         id: del.id,
-        participant: messageKey.participant || del.remoteJid // Importante para mensagens de outros usuários
+        participant: del.remoteJid.includes('@g.us') ? del.remoteJid : undefined
       };
 
-      // Se a mensagem não é nossa (fromMe: false), precisamos usar a estrutura correta
-      if (!messageKey.fromMe) {
-        deleteKey['fromMe'] = false;
-        // Garante que o participant está definido para mensagens de outros
-        if (!deleteKey.participant) {
-          deleteKey.participant = del.remoteJid;
-        }
-      }
+      // Log para debug
+      this.logger.log('Attempting to delete message with key:', deleteKey);
 
       const response = await this.client.sendMessage(del.remoteJid, { 
-        delete: deleteKey
+        delete: {
+          ...deleteKey,
+          remoteJid: del.remoteJid.endsWith('@s.whatsapp.net') ? del.remoteJid : `${del.remoteJid}@s.whatsapp.net`
+        }
       });
       
+      // Log da resposta
+      this.logger.log('Delete response:', response);
+
       if (response) {
         const isLogicalDeleted = configService.get<Database>('DATABASE').DELETE_DATA.LOGICAL_MESSAGE_DELETE;
         

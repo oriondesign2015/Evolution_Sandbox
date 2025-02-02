@@ -3561,14 +3561,24 @@ export class BaileysStartupService extends ChannelStartupService {
         throw new NotFoundException('Message not found or not authorized to delete');
       }
 
-      const messageKey = message.key as any; // Type assertion para resolver o problema de tipagem
-
+      const messageKey = message.key as any;
+      
+      // Estrutura completa para deletar mensagens
       const deleteKey = {
         remoteJid: del.remoteJid,
         fromMe: messageKey.fromMe,
         id: del.id,
-        participant: messageKey.participant
+        participant: messageKey.participant || del.remoteJid // Importante para mensagens de outros usuários
       };
+
+      // Se a mensagem não é nossa (fromMe: false), precisamos usar a estrutura correta
+      if (!messageKey.fromMe) {
+        deleteKey['fromMe'] = false;
+        // Garante que o participant está definido para mensagens de outros
+        if (!deleteKey.participant) {
+          deleteKey.participant = del.remoteJid;
+        }
+      }
 
       const response = await this.client.sendMessage(del.remoteJid, { 
         delete: deleteKey

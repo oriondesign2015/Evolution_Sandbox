@@ -3547,79 +3547,20 @@ export class BaileysStartupService extends ChannelStartupService {
 
   public async deleteMessage(del: DeleteMessage) {
     try {
-      const message = await this.prismaRepository.message.findFirst({
-        where: {
-          instanceId: this.instanceId,
-          key: {
-            path: ['id'],
-            equals: del.id
-          }
-        }
-      });
-
-      if (!message) {
-        throw new NotFoundException('Message not found or not authorized to delete');
-      }
-
-      // Estrutura simplificada similar ao Chatwoot
-      const deleteKey = {
+      const key = {
         remoteJid: del.remoteJid,
-        id: del.id,
-        fromMe: false,
-        participant: undefined
+        fromMe: del.fromMe,
+        id: del.messageId,
+        participant: del.participant // necessário para grupos
       };
 
-      // Log para debug - usando template string
-      this.logger.log(`Attempting to delete message with key: ${JSON.stringify(deleteKey)}`);
-
-      // Enviamos o comando de deleção de forma mais direta
-      const response = await this.client.sendMessage(del.remoteJid, { 
-        delete: deleteKey
+      await this.client.sendMessage(del.remoteJid, {
+        delete: key
       });
 
-      this.logger.log(`Delete response: ${JSON.stringify(response)}`);
-
-      if (response) {
-        const isLogicalDeleted = configService.get<Database>('DATABASE').DELETE_DATA.LOGICAL_MESSAGE_DELETE;
-        
-        if (isLogicalDeleted) {
-          const existingKey = typeof message?.key === 'object' && message.key !== null ? message.key : {};
-          await this.prismaRepository.message.update({
-            where: { id: message.id },
-            data: {
-              key: {
-                ...existingKey,
-                deleted: true,
-              },
-              status: 'DELETED',
-            },
-          });
-        } else {
-          await this.prismaRepository.message.deleteMany({
-            where: {
-              id: message.id,
-            },
-          });
-        }
-
-        this.sendDataWebhook(Events.MESSAGES_DELETE, {
-          id: message.id,
-          instanceId: message.instanceId,
-          key: message.key,
-          messageType: message.messageType,
-          status: 'DELETED',
-          source: message.source,
-          messageTimestamp: message.messageTimestamp,
-          pushName: message.pushName,
-          participant: message.participant,
-          message: message.message,
-        });
-      }
-
-      return { status: 'SUCCESS', response };
+      return { status: 'success', message: 'Mensagem deletada com sucesso' };
     } catch (error) {
-      this.logger.error(`Error deleting message: ${error.message}`);
-      throw error;
+      throw new InternalServerErrorException('Erro ao deletar mensagem', error?.toString());
     }
   }
 

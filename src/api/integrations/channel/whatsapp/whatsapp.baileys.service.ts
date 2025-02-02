@@ -3550,13 +3550,42 @@ export class BaileysStartupService extends ChannelStartupService {
       const key = {
         remoteJid: del.remoteJid,
         fromMe: del.fromMe,
-        id: del.messageId,
+        id: del.id, // Mudança aqui: usando 'id' em vez de 'messageId'
         participant: del.participant // necessário para grupos
       };
 
-      await this.client.sendMessage(del.remoteJid, {
+      const response = await this.client.sendMessage(del.remoteJid, {
         delete: key
       });
+
+      if (response) {
+        const messageId = response.message?.protocolMessage?.key?.id;
+        if (messageId) {
+          const isLogicalDeleted = configService.get<Database>('DATABASE').DELETE_DATA.LOGICAL_MESSAGE_DELETE;
+          let message = await this.prismaRepository.message.findFirst({
+            where: {
+              key: {
+                path: ['id'],
+                equals: messageId,
+              },
+            },
+          });
+          
+          if (isLogicalDeleted && message) {
+            const existingKey = typeof message?.key === 'object' && message.key !== null ? message.key : {};
+            message = await this.prismaRepository.message.update({
+              where: { id: message.id },
+              data: {
+                key: {
+                  ...existingKey,
+                  deleted: true,
+                },
+                status: 'DELETED',
+              },
+            });
+          }
+        }
+      }
 
       return { status: 'success', message: 'Mensagem deletada com sucesso' };
     } catch (error) {

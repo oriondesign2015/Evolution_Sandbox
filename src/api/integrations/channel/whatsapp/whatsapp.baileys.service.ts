@@ -3561,26 +3561,23 @@ export class BaileysStartupService extends ChannelStartupService {
         throw new NotFoundException('Message not found or not authorized to delete');
       }
 
-      // Estrutura correta para deletar mensagens
+      // Estrutura simplificada similar ao Chatwoot
       const deleteKey = {
         remoteJid: del.remoteJid,
-        fromMe: del.fromMe,
         id: del.id,
-        participant: del.remoteJid.includes('@g.us') ? del.remoteJid : undefined
+        fromMe: false,
+        participant: undefined
       };
 
-      // Log para debug
-      this.logger.log('Attempting to delete message with key:', deleteKey);
+      // Log para debug - usando template string
+      this.logger.log(`Attempting to delete message with key: ${JSON.stringify(deleteKey)}`);
 
+      // Enviamos o comando de deleção de forma mais direta
       const response = await this.client.sendMessage(del.remoteJid, { 
-        delete: {
-          ...deleteKey,
-          remoteJid: del.remoteJid.endsWith('@s.whatsapp.net') ? del.remoteJid : `${del.remoteJid}@s.whatsapp.net`
-        }
+        delete: deleteKey
       });
-      
-      // Log da resposta
-      this.logger.log('Delete response:', response);
+
+      this.logger.log(`Delete response: ${JSON.stringify(response)}`);
 
       if (response) {
         const isLogicalDeleted = configService.get<Database>('DATABASE').DELETE_DATA.LOGICAL_MESSAGE_DELETE;
@@ -3619,9 +3616,10 @@ export class BaileysStartupService extends ChannelStartupService {
         });
       }
 
-      return response;
+      return { status: 'SUCCESS', response };
     } catch (error) {
-      throw new InternalServerErrorException('Error while deleting message for everyone', error?.toString());
+      this.logger.error(`Error deleting message: ${error.message}`);
+      throw error;
     }
   }
 

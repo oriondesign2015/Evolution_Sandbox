@@ -881,6 +881,12 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
     const startSession = data.startSession;
     const variables = data.variables;
 
+    // Inicialize as variáveis que estão faltando
+    let session: IntegrationSession | null = null; // Inicialize como null ou um valor padrão
+    let settings: FlowiseSetting; // Declare a variável
+    let content: string; // Declare a variável
+    const pushName = data.pushName; // Certifique-se de que 'data' contém 'pushName'
+
     // Lógica para verificar e definir as configurações padrão
     const defaultSettingCheck = await this.settingsRepository.findFirst({
         where: {
@@ -919,14 +925,15 @@ export class FlowiseController extends ChatbotController implements ChatbotContr
             });
         }
 
+        // Chame a função processBot com as variáveis corretas
         await this.flowiseService.processBot(
             instance,
             remoteJid,
             findBot,
-            session,
-            settings,
-            content,
-            pushName
+            session, // Passar a variável session
+            settings, // Passar a variável settings
+            content, // Passar a variável content
+            pushName // Passar a variável pushName
         );
     }
 
